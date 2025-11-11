@@ -1,4 +1,3 @@
-// ...existing code...
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -43,9 +42,9 @@
       height:84px;
       object-fit:cover;
       border-radius:50%;
-      border:4px solid rgba(255,255,255,0.95);
-      background:var(--bg-cream);
-      padding:6px;
+      border: none;
+      background: transparent;
+      padding: 0;
       box-shadow:0 6px 18px rgba(0,0,0,0.12);
       animation:logoPop .35s ease;
     }
@@ -170,13 +169,31 @@
       .cart-fab { width:56px; height:56px; bottom:12px; right:10px; top:auto !important;}
       .cart-fab-count { min-width:18px; height:18px; font-size:.9em; right:2px; top:2px; }
       .header-title { font-size:1.4em; }
+
+      /* Mobile layout tweaks */
+      .logo-wrap { flex-direction: column; gap:8px; }
+      .header-desc { font-size:0.95em; }
+      .promo-text { display:block; font-size:0.95em; margin:4px 0; }
+
+      /* Controls stack/wrap on mobile to avoid single-row overflow */
+      .controls {
+        display:flex;
+        flex-wrap:wrap;
+        justify-content:center;
+        gap:6px;
+      }
+      .add-btn, .remove-btn { padding:6px 8px; font-size:0.95em; }
+      .product-name { font-size:1em; }
+      .product-desc { min-height:28px; font-size:0.9em; }
+      .product-price { font-size:0.98em; }
     }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="logo-wrap">
-      <!-- Поместите файл logo.png рядом с этим HTML, или замените src на URL -->
+      <!-- Поместите файл logo.png рядом с этим HTML, или замените src на URL.
+           Для прозрачного фона используйте PNG/SVG с прозрачностью. -->
       <img class="logo-img" src="logo.png" alt="СВОЯ КУХНЯ">
       <div>
         <div class="header-title">СВОЯ КУХНЯ</div>
@@ -206,28 +223,68 @@
 
   <script>
     // --- Настройки ---
-    const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyytR-HwA0y-TnHS_7nygs-_ZkPHDYzQQWFgV3GJSVuvdn93oX0kP92Ti9bQVqW7C_gFg/exec';
-    const TELEGRAM_BOT_TOKEN = '8543195311:AAGzpZwTaUAgw3qp6AeKQA_BbFX35jtbJIk';
+    const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxu0lkODTN7jGBCqYbsNA0-njTGFfzqQ878N4iDW2w-VW6-fScQf0ku2PAtxxq_c3lN/exec';
+    const TELEGRAM_BOT_TOKEN = '7253551384:AAGg18hGzmFAL1tVGIbqapy43wFtA0xwivc';
     const TELEGRAM_CHAT_ID = '7567253745';
 
     let menuData = [];
     let cart = {};
 
-    // --- Загрузка меню ---
+    // --- Загрузка меню (устойчивый парсер) ---
     async function loadMenu() {
       try {
         const res = await fetch(SHEET_API_URL);
+        if (!res.ok) throw new Error('Network response not OK: ' + res.status);
         let data = await res.json();
-        if (data.menu) data = data.menu;
-        menuData = data.map((item, idx) => ({
-          ...item,
-          price: Number(item.price),
-          available: String(item.available).trim().toLowerCase() === "true",
-          id: idx + 1
-        }));
+        if (data && data.menu) data = data.menu;
+
+        // case: array of arrays (headers + rows)
+        if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
+          const headers = data[0].map(h => String(h || '').trim().toLowerCase());
+          const rows = data.slice(1);
+          data = rows.map(row => {
+            const obj = {};
+            headers.forEach((h, i) => obj[h] = row[i]);
+            return obj;
+          });
+        }
+
+        // normalize item keys and parse price
+        function normalizeItem(it) {
+          const out = {};
+          Object.keys(it || {}).forEach(k => {
+            const key = String(k || '').trim().toLowerCase();
+            const val = it[k];
+            if (key === 'price' || key.includes('price')) {
+              // remove non-numeric except comma/dot/minus, replace comma with dot
+              const s = String(val ?? '').replace(/[^\d,.\-]/g, '').replace(/\s+/g, '').replace(',', '.');
+              out.price = Number(s) || 0;
+            } else if (key === 'available' || key.includes('available')) {
+              const v = String(val ?? '').trim().toLowerCase();
+              out.available = v === 'true' || v === '1' || v === 'yes';
+            } else if (key === 'img' || key === 'image' || key.includes('img')) {
+              out.img = val;
+            } else if (key === 'name' || key === 'title') {
+              out.name = val;
+            } else if (key === 'description' || key === 'desc') {
+              out.description = val;
+            } else {
+              out[key] = val;
+            }
+          });
+          // defaults
+          if (out.price == null) out.price = 0;
+          if (out.available == null) out.available = true;
+          if (!out.name) out.name = 'Без названия';
+          return out;
+        }
+
+        menuData = (data || []).map((item, idx) => ({ ...normalizeItem(item), id: idx + 1 }));
         renderMenu();
       } catch (e) {
-        document.getElementById('menu').innerHTML = '<div style="color:var(--brand-olive);font-size:1.1em;text-align:center;margin:40px auto;">Ошибка загрузки меню. Проверьте подключение или API Google Sheets.</div>';
+        console.error('loadMenu error', e);
+        document.getElementById('menu').innerHTML =
+          '<div style="color:var(--brand-olive);font-size:1.1em;text-align:center;margin:40px auto;">Ошибка загрузки меню. Проверьте подключение или API Google Sheets. Смотрите консоль.</div>';
       }
     }
 
@@ -238,12 +295,13 @@
       menuData.forEach(item => {
         const prod = document.createElement('div');
         prod.className = 'product' + (!item.available ? ' unavailable' : '');
+        const priceText = (Number(item.price) || 0).toLocaleString('vi-VN') + ' ₫';
         prod.innerHTML = `
           ${!item.available ? `<div class="unavailable-label">Нет в наличии</div>` : ''}
           <img class="product-img" src="${item.img || ''}" alt="${item.name}">
           <div class="product-name">${item.name}</div>
           <div class="product-desc">${item.description || ''}</div>
-          <div class="product-price">${item.price.toLocaleString('ru-RU')} ₽</div>
+          <div class="product-price">${priceText}</div>
           <div class="controls">
             <button class="remove-btn" ${!item.available ? 'disabled' : ''} onclick="updateCart(${item.id},-1)">−</button>
             <span id="qty-${item.id}">${cart[item.id]?.qty||0}</span>
@@ -257,7 +315,7 @@
 
     // --- Корзина ---
     window.updateCart = function(id, delta) {
-      const item = menuData.find(i=>i.id===id);
+      const item = menuData.find(i => i.id === id);
       if (!item || !item.available) return;
       if (!cart[id]) cart[id] = { ...item, qty: 0 };
       cart[id].qty = Math.max(0, cart[id].qty + delta);
@@ -270,32 +328,38 @@
 
     function updateCartFab() {
       const fab = document.getElementById('cartFab');
-      const count = Object.values(cart).reduce((s,i)=>s+i.qty,0);
-      fab.style.display = 'flex';
-      document.getElementById('cartFabCount').textContent = count>0 ? count : '';
+      const count = Object.values(cart).reduce((s, i) => s + i.qty, 0);
+      if (count > 0) {
+        fab.style.display = 'flex';
+        document.getElementById('cartFabCount').textContent = count;
+      } else {
+        fab.style.display = 'none';
+        document.getElementById('cartFabCount').textContent = '';
+      }
     }
 
     document.getElementById('cartFab').onclick = showCartModal;
 
     function showCartModal() {
       const modalBg = document.getElementById('cartModalBg');
+      const items = Object.values(cart);
       modalBg.innerHTML = `
         <div class="cart-modal">
           <button class="cart-close" onclick="closeCartModal()">&times;</button>
           <div class="cart-title">Корзина</div>
           <ul class="cart-list">
-            ${Object.values(cart).length === 0 ? '<li style="color:var(--brand-olive);text-align:center;width:100%;">Корзина пуста</li>' : Object.values(cart).map(item=>`
+            ${items.length === 0 ? '<li style="color:var(--brand-olive);text-align:center;width:100%;">Корзина пуста</li>' : items.map(item => `
               <li>
                 <span>${item.name} x${item.qty}</span>
                 <span>
                   <button class="remove-btn" onclick="updateCart(${item.id},-1)">−</button>
-                  <span style="margin:0 8px;">${(item.price*item.qty).toLocaleString('ru-RU')} ₽</span>
+                  <span style="margin:0 8px;">${(item.price * item.qty).toLocaleString('vi-VN')} ₫</span>
                   <button class="add-btn" onclick="updateCart(${item.id},1)">+</button>
                 </span>
               </li>
             `).join('')}
           </ul>
-          <div class="cart-total">Итого: ${Object.values(cart).reduce((s,i)=>s+i.price*i.qty,0).toLocaleString('ru-RU')} ₽</div>
+          <div class="cart-total">Итого: ${items.reduce((s,i)=>s + i.price * i.qty, 0).toLocaleString('vi-VN')} ₫</div>
           <form class="order-form" id="orderForm">
             <input type="text" id="name" placeholder="Имя или ник в Telegram" required>
             <input type="tel" id="phone" placeholder="Телефон" required>
@@ -338,15 +402,15 @@
         btn.disabled = false; btn.textContent = 'Оформить заказ'; return;
       }
       const itemsArr = Object.values(cart);
-      const total = itemsArr.reduce((s,i)=>s+i.price*i.qty,0);
-      let orderLines = itemsArr.map(i=>`${i.name} x${i.qty} — ${(i.price*i.qty).toLocaleString('ru-RU')} ₽`).join('\n');
-      let paymentText = payment==='cash'?'Оплата: Наличные':payment==='card'?'Оплата: Карта':'';
+      const total = itemsArr.reduce((s,i)=>s + i.price * i.qty, 0);
+      let orderLines = itemsArr.map(i => `${i.name} x${i.qty} — ${(i.price * i.qty).toLocaleString('vi-VN')} ₫`).join('\n');
+      let paymentText = payment === 'cash' ? 'Оплата: Наличные' : payment === 'card' ? 'Оплата: Карта' : '';
       const text =
         `🛒 Новый заказ (СВОЯ КУХНЯ)\n` +
         `Имя/ник: ${name}\nТелефон: ${phone}\nАдрес: ${address}\n` +
-        (paymentText?paymentText+'\n':'') +
-        (comment?`Комментарий: ${comment}\n`:'') +
-        `\nЗаказ:\n${orderLines}\n\nСумма: ${total.toLocaleString('ru-RU')} ₽`;
+        (paymentText ? paymentText + '\n' : '') +
+        (comment ? `Комментарий: ${comment}\n` : '') +
+        `\nЗаказ:\n${orderLines}\n\nСумма: ${total.toLocaleString('vi-VN')} ₫`;
       try {
         const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST',
@@ -363,15 +427,5 @@
         } else {
           alert('Ошибка отправки заказа. Попробуйте позже.');
           btn.disabled = false; btn.textContent = 'Оформить заказ';
+          console.error('telegram sendMessage failed', result);
         }
-      } catch {
-        alert('Ошибка отправки заказа. Попробуйте позже.');
-        btn.disabled = false; btn.textContent = 'Оформить заказ';
-      }
-    }
-    // --- Инициализация ---
-    loadMenu();
-  </script>
-</body>
-</html>
-// ...existing code...
