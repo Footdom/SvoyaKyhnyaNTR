@@ -82,8 +82,8 @@
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap:18px;
       justify-items:center;
-      align-items:start;      /* ensure cards align to top */
-      grid-auto-rows: 1fr;    /* make rows same height */
+      align-items:start;
+      grid-auto-rows: 1fr;
       max-width:1100px;
       margin:26px auto 80px;
       padding:0 12px;
@@ -94,18 +94,18 @@
       background: #fff;
       border-radius:14px;
       box-shadow:0 4px 18px rgba(0,0,0,0.06);
-      width:100%;                /* fill grid cell */
+      width:100%;
       max-width:220px;
       padding:16px 12px 14px;
-      display:flex; 
+      display:flex;
       flex-direction:column;
-      justify-content:space-between; /* push controls to bottom */
+      justify-content:space-between;
       transition:transform .18s,box-shadow .18s;
       position:relative;
       border:2px solid var(--card-border);
       font-family: 'PT Sans Narrow', Arial, sans-serif;
       box-sizing:border-box;
-      height:100%;               /* occupy full grid row height */
+      height:100%;
     }
     .product:not(.unavailable):hover {
       transform:translateY(-6px) scale(1.02);
@@ -201,18 +201,41 @@
       pointer-events: none;
     }
 
-    /* Loader overlay */
+    /* Loader overlay with logo */
     #menuLoader{
       position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
       background:rgba(255,255,255,0.86); z-index:300; opacity:0; pointer-events:none; transition:opacity .22s ease;
       backdrop-filter: blur(4px);
+      flex-direction:column;
+      gap:12px;
     }
     #menuLoader.visible{ opacity:1; pointer-events:auto; }
-    .loader-box{ text-align:center; color:var(--brand-olive); }
-    .spinner{ width:48px; height:48px; border:5px solid rgba(0,0,0,0.08); border-top-color:var(--brand-olive); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 8px; }
+    .loader-box{ text-align:center; color:var(--brand-olive); display:flex; align-items:center; flex-direction:column; gap:10px; }
+    .loader-logo { width:72px; height:72px; border-radius:50%; object-fit:cover; box-shadow:0 6px 18px rgba(0,0,0,0.12); animation:logoFloat 1.6s ease-in-out infinite; }
+    @keyframes logoFloat { 0%{ transform:translateY(0) } 50%{ transform:translateY(-6px) } 100%{ transform:translateY(0) } }
+    .spinner{ width:48px; height:48px; border:5px solid rgba(0,0,0,0.08); border-top-color:var(--brand-olive); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 0; }
     @keyframes spin{ to{ transform:rotate(360deg); } }
+    .loader-text{ font-weight:700; color:var(--brand-olive); }
 
-    /* Responsive columns: desktop auto-fit, tablet 3, phone 2 */
+    /* Order success overlay inside modal */
+    .order-success-overlay {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      background: rgba(255,255,255,0.92); z-index:400; opacity:0; transform:scale(.98);
+      transition:opacity .22s ease, transform .22s ease;
+      pointer-events:none;
+      flex-direction:column; gap:12px;
+      border-radius:14px;
+    }
+    .order-success-overlay.visible { opacity:1; transform:scale(1); pointer-events:auto; }
+    .success-logo { width:60px; height:60px; border-radius:50%; object-fit:cover; box-shadow:0 6px 18px rgba(0,0,0,0.12); transform:scale(.9); animation:logoPop .36s ease forwards; }
+    .check-svg { width:120px; height:120px; display:block; }
+    .check-svg .circle { fill:none; stroke:var(--brand-olive); stroke-width:6; stroke-linecap:round; stroke-dasharray: 330; stroke-dashoffset:330; animation:drawCircle .6s ease forwards; }
+    .check-svg .check { fill:none; stroke:var(--accent); stroke-width:8; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:120; stroke-dashoffset:120; animation:drawCheck .45s ease .5s forwards; }
+    @keyframes drawCircle { to{ stroke-dashoffset:0; } }
+    @keyframes drawCheck { to{ stroke-dashoffset:0; } }
+    .success-text { color:var(--brand-olive); font-weight:800; font-size:1.05em; text-align:center; }
+
+    /* Responsive adjustments */
     @media (max-width:1000px) {
       .menu { grid-template-columns: repeat(3, minmax(140px, 1fr)); max-width:900px; }
     }
@@ -247,9 +270,10 @@
     </div>
   </div>
 
-  <!-- loader overlay -->
+  <!-- loader overlay with logo -->
   <div id="menuLoader" aria-hidden="true">
     <div class="loader-box" role="status" aria-live="polite">
+      <img src="logo.png" alt="Логотип" class="loader-logo" />
       <div class="spinner" aria-hidden="true"></div>
       <div class="loader-text">Загрузка меню…</div>
     </div>
@@ -288,7 +312,7 @@
       if (typeof v === 'number') return v;
       if (v == null) return 0;
       let s = String(v).replace(/\u00A0/g, '').trim();
-      s = s.replace(/[^\d,.\-]/g, ''); // keep digits, comma, dot, minus
+      s = s.replace(/[^\d,.\-]/g, '');
       if (!s) return 0;
       s = s.replace(/,/g, '.');
       const parts = s.split('.');
@@ -302,19 +326,8 @@
 
     function escapeHtml(s){ return String(s || '').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]); }
 
-    // loader control
-    function showLoader(){
-      const l = document.getElementById('menuLoader');
-      if(!l) return;
-      l.classList.add('visible');
-      l.setAttribute('aria-hidden','false');
-    }
-    function hideLoader(){
-      const l = document.getElementById('menuLoader');
-      if(!l) return;
-      l.classList.remove('visible');
-      l.setAttribute('aria-hidden','true');
-    }
+    function showLoader(){ const l=document.getElementById('menuLoader'); if(!l) return; l.classList.add('visible'); l.setAttribute('aria-hidden','false'); }
+    function hideLoader(){ const l=document.getElementById('menuLoader'); if(!l) return; l.classList.remove('visible'); l.setAttribute('aria-hidden','true'); }
 
     async function loadMenu() {
       showLoader();
@@ -324,7 +337,6 @@
         if (!res.ok) throw new Error('Primary sheet fetch failed: ' + res.status);
         const json = await res.json();
 
-        // Google Sheets v4 format: { values: [...] }
         if (json && Array.isArray(json.values) && json.values.length > 0) {
           const rows = json.values;
           const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
@@ -347,7 +359,6 @@
           return;
         }
 
-        // Apps Script fallback format { menu: [...] }
         if (json && json.menu && Array.isArray(json.menu)) {
           menuData = json.menu.map((item, idx) => ({
             id: idx + 1,
@@ -363,7 +374,6 @@
           return;
         }
 
-        // plain array of objects
         if (Array.isArray(json) && json.length > 0 && typeof json[0] === 'object') {
           menuData = json.map((item, idx) => ({
             id: idx + 1,
@@ -515,6 +525,34 @@
       document.getElementById('cartModalBg').style.display = 'none';
     };
 
+    // show animated success overlay inside modal
+    function showOrderSuccessAnimation(message){
+      const modal = document.querySelector('.cart-modal');
+      if (!modal) return;
+      // remove existing overlay if any
+      const prev = modal.querySelector('.order-success-overlay');
+      if (prev) prev.remove();
+
+      const overlay = document.createElement('div');
+      overlay.className = 'order-success-overlay';
+      overlay.innerHTML = `
+        <img src="logo.png" alt="logo" class="success-logo" />
+        <svg class="check-svg" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="circle" cx="60" cy="60" r="52"></circle>
+          <path class="check" d="M34 63l18 16 34-38"></path>
+        </svg>
+        <div class="success-text">${escapeHtml(message || 'Спасибо! Ваш заказ принят.')}</div>
+      `;
+      modal.appendChild(overlay);
+      // trigger visible
+      setTimeout(()=> overlay.classList.add('visible'), 10);
+      // auto close after short delay
+      setTimeout(()=>{
+        overlay.classList.remove('visible');
+        setTimeout(()=> { overlay.remove(); closeCartModal(); renderMenu(); }, 220);
+      }, 1700);
+    }
+
     async function sendOrder(e) {
       e.preventDefault();
       const btn = document.querySelector('.order-btn');
@@ -547,12 +585,14 @@
           body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text })
         });
         const result = await response.json();
-        if (result.ok) {
-          btn.style.display = 'none';
-          document.getElementById('orderSuccess').style.display = 'block';
-          document.getElementById('orderSuccess').textContent = 'Спасибо! Ваша заявка принята.';
+        if (result && result.ok) {
+          // show animated success overlay with logo + check
           cart = {};
-          setTimeout(()=>{ closeCartModal(); renderMenu(); }, 1500);
+          updateCartFab();
+          showOrderSuccessAnimation('Спасибо! Ваша заявка принята.');
+          // hide original button to avoid duplicate click (still let overlay handle closing)
+          btn.style.display = 'none';
+          return;
         } else {
           alert('Ошибка отправки заказа. Попробуйте позже.');
           btn.disabled = false; btn.textContent = 'Оформить заказ';
