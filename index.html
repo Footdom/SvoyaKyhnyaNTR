@@ -193,7 +193,7 @@
 
     async function loadMenu() {
       try {
-        if (!SHEET_API_URL || SHEET_API_URL.includes('https://script.google.com/macros/library/d/1PGk_ryh5WTb8UjuPMFSt_VRIiXxJ_WjoJjeNAq3FMA6NH7bDExxDS_tJ/1')) {
+        if (!SHEET_API_URL || SHEET_API_URL.includes('https://script.google.com/macros/s/AKfycbyytR-HwA0y-TnHS_7nygs-_ZkPHDYzQQWFgV3GJSVuvdn93oX0kP92Ti9bQVqW7C_gFg/exec')) {
           console.error('SHEET_API_URL не задан. Вставьте ваш Web App URL или Google Sheets API URL в константу SHEET_API_URL.');
           document.getElementById('menu').innerHTML = '<div style="text-align:center;color:var(--brand-olive);margin:40px;">Нужен SHEET_API_URL — вставьте URL Apps Script / Sheets API.</div>';
           return;
