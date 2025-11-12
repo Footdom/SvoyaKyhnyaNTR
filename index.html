@@ -1,3 +1,4 @@
+// ...existing code...
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -73,9 +74,19 @@
     }
     .promo-star { color:var(--accent); font-size:1.6em; vertical-align:middle; }
     .promo-text { color:#fffbe6; font-weight:700; margin:0 8px; }
+
+    /* GRID-based menu: adapts to screen size */
     .menu {
-      display:flex; flex-wrap:wrap; gap:18px; justify-content:center; margin:26px 12px 80px 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap:18px;
+      justify-items:center;
+      max-width:1100px;
+      margin:26px auto 80px;
+      padding:0 12px;
+      box-sizing:border-box;
     }
+
     .product {
       background: #fff;
       border-radius:14px;
@@ -87,6 +98,7 @@
       position:relative;
       border:2px solid var(--card-border);
       font-family: 'PT Sans Narrow', Arial, sans-serif;
+      box-sizing:border-box;
     }
     .product:not(.unavailable):hover {
       transform:translateY(-6px) scale(1.02);
@@ -108,7 +120,7 @@
     .product-price {
       font-size:1.05em; color:#222; margin-bottom:10px; font-weight:700; letter-spacing:0.5px;
     }
-    .controls { display:flex; align-items:center; gap:8px; }
+    .controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center; }
     .add-btn, .remove-btn {
       border:none; border-radius:8px; font-size:1em; padding:6px 12px; margin:0 4px; cursor:pointer; transition:filter .12s;
       font-family: 'PT Sans Narrow', Arial, sans-serif;
@@ -180,10 +192,14 @@
       pointer-events: none;
     }
 
+    /* Responsive columns: desktop 4, tablet 3, phone 2 */
+    @media (max-width:1000px) {
+      .menu { grid-template-columns: repeat(3, minmax(140px, 1fr)); max-width:900px; }
+    }
     @media (max-width:600px) {
-      .menu { gap:10px; }
-      .product { width:44vw; min-width:120px; padding:10px 8px; }
-      .product-img { width:64px; height:64px; }
+      .menu { grid-template-columns: repeat(2, minmax(140px, 1fr)); gap:12px; max-width:720px; margin-bottom:120px; }
+      .product { width:100%; max-width:220px; padding:10px 8px; }
+      .product-img { width:72px; height:72px; }
       .cart-modal { min-width:92vw; padding:12px 8px 10px 8px; border-radius:16px; margin-top:12vw;}
       .cart-fab { width:56px; height:56px; bottom:12px; right:10px; top:auto !important;}
       .cart-fab-count { min-width:18px; height:18px; font-size:.9em; right:2px; top:2px; }
@@ -205,6 +221,10 @@
       .product-name { font-size:1em; }
       .product-desc { min-height:28px; font-size:0.9em; }
       .product-price { font-size:0.98em; }
+    }
+    @media (max-width:420px) {
+      .menu { gap:10px; padding:0 8px; }
+      .header-title { font-size:1.1rem; }
     }
   </style>
 </head>
@@ -241,8 +261,9 @@
   <script>
     // --- Настройки ---
     const SHEET_API_URL = 'https://sheets.googleapis.com/v4/spreadsheets/SPREADSHEET_ID/values/Sheet1?key=API_KEY';
-    const SHEET_API_FALLBACK = 'https://script.google.com/macros/s/AKfycbyytR-HwA0y-TnHS_7nygs-_ZkPHDYzQQWFgV3GJSVuvdn93oX0kP92Ti9bQVqW7C_gFg/exec';
+    const SHEET_API_FALLBACK = 'https://script.google.com/macros/s/AKfycbxu0lkODTN7jGBCqYbsNA0-njTGFfzqQ878N4iDW2w-VW6-fScQf0ku2PAtxxq_c3lN/exec';
 
+    // НЕ храните токен в клиенте в продакшене — желательно отправлять заказ через Apps Script / сервер
     const TELEGRAM_BOT_TOKEN = '8543195311:AAGzpZwTaUAgw3qp6AeKQA_BbFX35jtbJIk';
     const TELEGRAM_CHAT_ID = '7567253745';
 
@@ -256,7 +277,7 @@
       if (typeof v === 'number') return v;
       if (v == null) return 0;
       let s = String(v).replace(/\u00A0/g, '').trim();
-      s = s.replace(/[^\d,.\-]/g, ''); // keep digits, comma, dot, minus
+      s = s.replace(/[^\d,.\-]/g, '');
       if (!s) return 0;
       s = s.replace(/,/g, '.');
       const parts = s.split('.');
@@ -284,7 +305,7 @@
             headers.forEach((h, i) => obj[h] = row[i] !== undefined ? row[i] : '');
             return {
               id: idx + 1,
-              name: obj.price === undefined ? (obj.name || obj.title || `Блюдо ${idx+1}`) : (obj.name || obj.title || `Блюдо ${idx+1}`),
+              name: obj.name || obj.title || `Блюдо ${idx+1}`,
               description: obj.description || obj.desc || '',
               img: obj.img || obj.image || '',
               price: toNumberSafe(obj.price || obj.cost || obj['цена']),
@@ -436,7 +457,7 @@
             <select id="payment">
               <option value="">Способ оплаты (необязательно)</option>
               <option value="cash">Наличные</option>
-              <option value="card">Карта</option>
+              <option value="qr">QR (оплатить через скан)</option>
             </select>
             <textarea id="comment" placeholder="Комментарий к заказу (необязательно)" rows="2"></textarea>
             <button type="submit" class="order-btn">Оформить заказ</button>
@@ -474,7 +495,7 @@
       const itemsArr = Object.values(cart);
       const total = itemsArr.reduce((s,i)=>s + (i.price||0)*i.qty,0);
       let orderLines = itemsArr.map(i=>`${i.name} x${i.qty} — ${VND_FMT.format(i.price * i.qty)}`).join('\n');
-      let paymentText = payment==='cash'?'Оплата: Наличные':payment==='card'?'Оплата: Карта':'';
+      let paymentText = payment==='cash' ? 'Оплата: Наличные' : payment==='qr' ? 'Оплата: QR' : '';
       const text =
         `🛒 Новый заказ (СВОЯ КУХНЯ)\n` +
         `Имя/ник: ${name}\nТелефон: ${phone}\nАдрес: ${address}\n` +
@@ -482,6 +503,7 @@
         (comment?`Комментарий: ${comment}\n`:'') +
         `\nЗаказ:\n${orderLines}\n\nСумма: ${VND_FMT.format(total)}`;
       try {
+        // Лучше делать отправку через сервер/Apps Script — токен в клиенте небезопасен.
         const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
@@ -511,3 +533,4 @@
   </script>
 </body>
 </html>
+// ...existing code...
