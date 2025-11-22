@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>СВОЯ КУХНЯ — доставка еды</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <link href="https://fonts.googleapis.com/css?family=PT+Sans+Narrow:700&display=swap" rel="stylesheet">
   <style>
-    :root{
+    :root {
       --brand-olive:#556B2F;
       --brand-olive-light:#7B8A2F;
       --bg-cream:#f7efe0;
@@ -14,7 +14,7 @@
       --muted:#7c6a5c;
       --card-border:#6b7a29;
     }
-    html,body{height:100%;}
+    html,body { height:100%; }
     body {
       background: var(--bg-cream);
       font-family: 'PT Sans Narrow', Arial, sans-serif;
@@ -24,7 +24,38 @@
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
     }
-    /* ...все остальные стили без изменений... */
+    /* ... основной CSS ... (оставьте существующие стили) ... */
+
+    /* ADDITIONAL MOBILE IMPROVEMENTS */
+    @media (max-width: 600px) {
+      .header-title { font-size:1.2em; }
+      .cart-modal { min-width: 96vw !important; padding:10px 2vw 8px 2vw !important; border-radius:12px !important; }
+      .cart-title { font-size: 1em !important; }
+      .cart-list li { font-size:1em !important; }
+      .product { max-width:96vw !important; width:100%; padding:6px 3vw !important; }
+      .product-img { width:58px; height:58px; }
+      .cart-fab { width:48px; height:48px; bottom:10px; right:6px; }
+      .cart-fab-count { min-width:16px; height:16px; font-size:0.95em; right:0; top:0; }
+      .order-form input, .order-form textarea, .order-form select { font-size:1em; }
+      .success-logo { width:41px; height:41px; }
+      .check-svg { width:68px;height:68px;}
+    }
+    @media (max-width:399px) {
+      .header-title { font-size:0.97em; }
+      .product-img { width:46px; height:46px;}
+    }
+    /* Ensure modal disables background scrolling on mobile */
+    body.modal-open {
+      overflow: hidden !important;
+      position: fixed !important;
+      width: 100vw;
+    }
+    /* clickable area for touch targets */
+    .add-btn, .remove-btn {
+      min-width: 40px;
+      min-height: 40px;
+      font-size:1.18em;
+    }
   </style>
 </head>
 <body>
@@ -78,7 +109,7 @@
     let menuData = [];
     let cart = {};
 
-    // вьетнамский донг formatter
+    // Валюта — Вьетнамский донг
     const VND_FMT = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
 
     function toNumberSafe(v) {
@@ -101,6 +132,15 @@
 
     function showLoader(){ const l=document.getElementById('menuLoader'); if(!l) return; l.classList.add('visible'); l.setAttribute('aria-hidden','false'); }
     function hideLoader(){ const l=document.getElementById('menuLoader'); if(!l) return; l.classList.remove('visible'); l.setAttribute('aria-hidden','true'); }
+
+    // Блокировка двойного оформления заказа
+    let orderInProcess = false;
+
+    // Блокирует background scroll при открытой модалке (особенно на мобилке)
+    function setModalOpen(open) {
+      if(open) document.body.classList.add('modal-open');
+      else document.body.classList.remove('modal-open');
+    }
 
     async function loadMenu() {
       showLoader();
@@ -187,7 +227,6 @@
         } catch (e) {
           clearTimeout(safetyTimeout);
           hideLoader();
-          console.error('Load menu error:', err, e);
           document.getElementById('menu').innerHTML = '<div style="color:var(--brand-olive);font-size:1.1em;text-align:center;margin:40px auto;">Ошибка загрузки меню. Проверьте соединение.</div>';
         }
       }
@@ -204,7 +243,7 @@
       menuData.forEach(item => {
         const prod = document.createElement('div');
         prod.className = 'product' + (!item.available ? ' unavailable' : '');
-        const priceText = VND_FMT.format(Number(item.price) || 0); // заменили формат валюты
+        const priceText = VND_FMT.format(Number(item.price) || 0); // формат — донги
         prod.innerHTML = `
           ${!item.available ? `<div class="prod-unavailable">Нет в наличии</div>` : ''}
           <img class="product-img" src="${item.img || 'https://via.placeholder.com/100x100?text=Фото'}" alt="${escapeHtml(item.name)}">
@@ -249,6 +288,7 @@
     document.getElementById('cartFab').onclick = showCartModal;
 
     function showCartModal() {
+      setModalOpen(true);
       const modalBg = document.getElementById('cartModalBg');
       const items = Object.values(cart);
       const listHtml = items.length === 0
@@ -295,6 +335,7 @@
     }
 
     window.closeCartModal = function() {
+      setModalOpen(false);
       document.getElementById('cartModalBg').style.display = 'none';
     };
 
@@ -328,6 +369,8 @@
 
     async function sendOrder(e) {
       e.preventDefault();
+      if(orderInProcess) return;
+      orderInProcess = true;
       const btn = document.querySelector('.order-btn');
       btn.disabled = true;
       btn.textContent = 'Отправка...';
@@ -338,14 +381,14 @@
       const comment = document.getElementById('comment').value.trim();
       if (!nickname || !phone || !address) {
         alert('Пожалуйста, заполните все обязательные поля!');
-        btn.disabled = false; btn.textContent = 'Оформить заказ'; return;
+        btn.disabled = false; btn.textContent = 'Оформить заказ'; orderInProcess=false; return;
       }
       if (!/^@[A-Za-z0-9_]{5,}$/.test(nickname)) {
         alert('Пожалуйста, введите корректный Telegram-никнейм (начинается с @, минимум 5 символов)!');
-        btn.disabled = false; btn.textContent = 'Оформить заказ'; return;
+        btn.disabled = false; btn.textContent = 'Оформить заказ'; orderInProcess=false; return;
       }
       const itemsArr = Object.values(cart);
-      if (itemsArr.length === 0) { alert('Корзина пуста'); btn.disabled = false; btn.textContent = 'Оформить заказ'; return; }
+      if (itemsArr.length === 0) { alert('Корзина пуста'); btn.disabled = false; btn.textContent = 'Оформить заказ'; orderInProcess=false; return; }
       const total = itemsArr.reduce((s,i)=>s + (i.price||0)*i.qty,0);
       let orderLines = itemsArr.map(i=>`${i.name} x${i.qty} — ${VND_FMT.format(i.price * i.qty)}`).join('\n');
       let paymentText = payment==='cash' ? 'Оплата: Наличные' : payment==='qr' ? 'Оплата: QR' : '';
@@ -363,23 +406,19 @@
         });
         const result = await response.json();
         if (result && result.ok) {
-          // show animated success overlay with logo + check
           cart = {};
           updateCartFab();
           showOrderSuccessAnimation('Спасибо! Ваша заявка принята.');
-          // hide original button to avoid duplicate click (still let overlay handle closing)
           btn.style.display = 'none';
-          return;
         } else {
           alert('Ошибка отправки заказа. Попробуйте позже.');
           btn.disabled = false; btn.textContent = 'Оформить заказ';
-          console.error('telegram sendMessage failed', result);
         }
       } catch (err) {
         alert('Ошибка отправки заказа. Попробуйте позже.');
         btn.disabled = false; btn.textContent = 'Оформить заказ';
-        console.error('sendOrder error', err);
       }
+      orderInProcess = false;
     }
 
     // init
