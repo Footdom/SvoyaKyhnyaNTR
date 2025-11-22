@@ -281,8 +281,8 @@
     let menuData = [];
     let cart = {};
 
-    // рубль formatter
-    const RUB_FMT = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 });
+    // вьетнамский донг formatter
+    const RUB_FMT = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
 
     function toNumberSafe(v) {
       if (typeof v === 'number') return v;
@@ -405,7 +405,7 @@
           clearTimeout(safetyTimeout);
           hideLoader();
           console.error('Load menu error:', err, e);
-          document.getElementById('menu').innerHTML = '<div style="color:var(--brand-olive);font-size:1.1em;text-align:center;margin:40px auto;">Ошибка загрузки меню. Проверьте URL Google Sheets API и API_KEY.</div>';
+          document.getElementById('menu').innerHTML = '<div style="color:var(--brand-olive);font-size:1.1em;text-align:center;margin:40px auto;">Ошибка загрузки меню. Проверь�[...]'
         }
       }
     }
@@ -483,12 +483,12 @@
       const total = items.reduce((s,i)=>s + (i.price || 0) * i.qty, 0);
       modalBg.innerHTML = `
         <div class="cart-modal" role="dialog" aria-modal="true" aria-label="Корзина">
-          <button class="cart-close" onclick="closeCartModal()" aria-label="Закрыть" style="position:absolute;right:10px;top:6px;border:none;background:none;font-size:20px;cursor:pointer;">&times;</button>
+          <button class="cart-close" onclick="closeCartModal()" aria-label="Закрыть" style="position:absolute;right:10px;top:6px;border:none;background:none;font-size:20px;cursor:pointer;">&tim[...] 
           <div class="cart-title">Корзина</div>
           <ul class="cart-list">${listHtml}</ul>
           <div class="cart-total">Итого: ${RUB_FMT.format(total)}</div>
           <form class="order-form" id="orderForm">
-            <input type="text" id="name" placeholder="Имя или ник в Telegram" required>
+            <input type="text" id="name" placeholder="Никнейм Telegram" required>
             <input type="tel" id="phone" placeholder="Телефон" required>
             <input type="text" id="address" placeholder="Адрес доставки" required>
             <select id="payment">
@@ -536,7 +536,7 @@
       let paymentText = payment==='cash' ? 'Оплата: Наличные' : payment==='qr' ? 'Оплата: QR' : '';
       const text =
         `🛒 Новый заказ (СВОЯ КУХНЯ)\n` +
-        `Имя/ник: ${name}\nТелефон: ${phone}\nАдрес: ${address}\n` +
+        `Никнейм Telegram: ${name}\nТелефон: ${phone}\nАдрес: ${address}\n` +
         (paymentText?paymentText+'\n':'') +
         (comment?`Комментарий: ${comment}\n`:'') +
         `\nЗаказ:\n${orderLines}\n\nСумма: ${RUB_FMT.format(total)}`;
