@@ -508,6 +508,9 @@
           <ul class="cart-list">${listHtml}</ul>
           <div class="cart-total">Итого: ${RUB_FMT.format(total)}</div>
           <form class="order-form" id="orderForm">
+            <div style="background:#fff3cd;border:2px solid #ffc107;border-radius:8px;padding:8px;margin-bottom:10px;font-size:0.95em;color:#856404;text-align:center;">
+              ⚠️ <strong>Укажите точные данные для обратной связи</strong>
+            </div>
             <input type="text" id="name" placeholder="Точный никнейм Telegram (например: @username)" required>
             <input type="tel" id="phone" placeholder="Точный номер телефона" required>
             <select id="payment" required>
