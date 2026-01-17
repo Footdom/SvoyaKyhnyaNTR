@@ -828,37 +828,208 @@
       }
     }
 
-    .spinner {
-      width:48px;
-      height:48px;
-      border:4px solid rgba(0,0,0,0.1);
-      border-top-color:var(--accent);
-      border-radius:50%;
-      animation:spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      to {
-        transform:rotate(360deg);
-      }
-    }
-
+    /* НОВЫЕ СТИЛИ ЗАГРУЗЧИКА */
     .loader-overlay {
       position:fixed;
       inset:0;
-      background:rgba(255,255,255,0.98);
+      background:linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
       z-index:999;
       display:flex;
       align-items:center;
       justify-content:center;
-      flex-direction:column;
+      padding:20px;
+      overflow:hidden;
     }
-    
-    .loader-text {
-      margin-top:20px;
+
+    .loader-overlay::before {
+      content:'';
+      position:absolute;
+      inset:0;
+      background-image: 
+        linear-gradient(rgba(26,26,26,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26,26,26,0.02) 1px, transparent 1px);
+      background-size:50px 50px;
+      opacity:0.3;
+    }
+
+    .loader-card {
+      background:var(--card-bg);
+      border-radius:var(--radius-lg);
+      padding:48px 40px;
+      max-width:420px;
+      width:100%;
+      box-shadow:var(--shadow-lg);
+      border:1px solid var(--border);
+      position:relative;
+      z-index:10;
+    }
+
+    .logo-section {
+      text-align:center;
+      margin-bottom:32px;
+    }
+
+    .loader-logo-img {
+      width:80px;
+      height:80px;
+      border-radius:var(--radius-md);
+      object-fit:cover;
+      box-shadow:var(--shadow-md);
+      margin-bottom:16px;
+    }
+
+    .brand-title {
+      font-size:24px;
+      font-weight:800;
       color:var(--primary);
+      letter-spacing:-0.5px;
+      margin-bottom:6px;
+    }
+
+    .brand-subtitle {
+      font-size:13px;
+      color:var(--text-light);
+      font-weight:500;
+    }
+
+    .loading-dots {
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      margin-bottom:32px;
+    }
+
+    .dot {
+      width:12px;
+      height:12px;
+      border-radius:50%;
+      background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      animation:bounce 1.4s ease-in-out infinite;
+    }
+
+    .dot:nth-child(2) {
+      animation-delay:0.16s;
+    }
+
+    .dot:nth-child(3) {
+      animation-delay:0.32s;
+    }
+
+    @keyframes bounce {
+      0%, 80%, 100% {
+        transform:translateY(0);
+        opacity:0.6;
+      }
+      40% {
+        transform:translateY(-16px);
+        opacity:1;
+      }
+    }
+
+    .status-text {
+      text-align:center;
+      margin-bottom:28px;
+      min-height:32px;
+    }
+
+    .status-text h2 {
+      font-size:18px;
       font-weight:600;
-      font-size:16px;
+      background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+      transition:all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .progress-container {
+      margin-bottom:16px;
+    }
+
+    .progress-bar {
+      position:relative;
+      height:6px;
+      background:var(--bg);
+      border-radius:10px;
+      overflow:hidden;
+      border:1px solid var(--border);
+    }
+
+    .progress-fill {
+      position:absolute;
+      inset-y:0;
+      left:0;
+      background:linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%);
+      border-radius:10px;
+      transition:width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow:0 0 20px rgba(255, 107, 53, 0.3);
+      width:0;
+    }
+
+    .progress-fill::after {
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation:shimmer 2s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        transform:translateX(-100%);
+      }
+      100% {
+        transform:translateX(200%);
+      }
+    }
+
+    .progress-info {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:12px;
+      font-size:13px;
+    }
+
+    .progress-percent {
+      color:var(--text-light);
+      font-weight:600;
+    }
+
+    .progress-label {
+      color:var(--text-muted);
+      font-weight:500;
+    }
+
+    .status-indicators {
+      display:flex;
+      justify-content:center;
+      gap:6px;
+      margin-bottom:24px;
+    }
+
+    .indicator {
+      height:4px;
+      border-radius:4px;
+      transition:all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      background:var(--border);
+    }
+
+    .indicator.active {
+      width:32px;
+      background:linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%);
+    }
+
+    .indicator:not(.active) {
+      width:4px;
+    }
+
+    .loading-message {
+      text-align:center;
+      color:var(--text-muted);
+      font-size:12px;
+      font-weight:500;
+      letter-spacing:0.3px;
     }
 
     .processing {
@@ -1108,6 +1279,19 @@
         font-size:13px;
         padding:8px 14px;
       }
+
+      .loader-card {
+        padding:36px 28px;
+      }
+
+      .brand-title {
+        font-size:20px;
+      }
+
+      .loader-logo-img {
+        width:64px;
+        height:64px;
+      }
     }
   </style>
 </head>
@@ -1135,9 +1319,47 @@
 
   <div class="menu" id="menu"></div>
 
+  <!-- НОВЫЙ БЛОК ЗАГРУЗЧИКА -->
   <div id="loader" class="loader-overlay">
-    <div class="spinner"></div>
-    <div class="loader-text">Загрузка меню...</div>
+    <div class="loader-card">
+      <div class="logo-section">
+        <img class="loader-logo-img" src="logo.png" alt="СВОЯ КУХНЯ">
+        <div class="brand-title">СВОЯ КУХНЯ</div>
+        <div class="brand-subtitle">Домашняя еда с доставкой</div>
+      </div>
+
+      <div class="loading-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+
+      <div class="status-text">
+        <h2 id="statusText">Готовим меню</h2>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-info">
+          <span class="progress-percent" id="progressPercent">0%</span>
+          <span class="progress-label">Загрузка...</span>
+        </div>
+      </div>
+
+      <div class="status-indicators" id="indicators">
+        <div class="indicator active"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+      </div>
+
+      <div class="loading-message">
+        Пожалуйста, подождите
+      </div>
+    </div>
   </div>
 
   <div id="debugPanel" class="debug-panel"></div>
@@ -1250,8 +1472,64 @@
       }
     }
 
+    // ФУНКЦИЯ АНИМАЦИИ ЗАГРУЗЧИКА
+    function startLoaderAnimation() {
+      const statuses = [
+        { text: 'Готовим меню' },
+        { text: 'Загружаем фото' },
+        { text: 'Обновляем позиции' },
+        { text: 'Проверяем цены' },
+        { text: 'Финальные штрихи' }
+      ];
+
+      let progress = 0;
+      let currentStatusIndex = 0;
+
+      const progressFill = document.getElementById('progressFill');
+      const progressPercent = document.getElementById('progressPercent');
+      const statusText = document.getElementById('statusText');
+      const indicators = document.getElementById('indicators')?.children;
+
+      // Обновление прогресса
+      const progressInterval = setInterval(() => {
+        progress += 2;
+        if (progress > 100) {
+          progress = 100;
+          clearInterval(progressInterval);
+        }
+
+        if (progressFill) progressFill.style.width = progress + '%';
+        if (progressPercent) progressPercent.textContent = Math.round(progress) + '%';
+      }, 30);
+
+      // Смена статусов
+      const statusInterval = setInterval(() => {
+        currentStatusIndex = (currentStatusIndex + 1) % statuses.length;
+        if (statusText) statusText.textContent = statuses[currentStatusIndex].text;
+
+        // Обновление индикаторов
+        if (indicators) {
+          Array.from(indicators).forEach((indicator, index) => {
+            if (index === currentStatusIndex) {
+              indicator.classList.add('active');
+            } else {
+              indicator.classList.remove('active');
+            }
+          });
+        }
+      }, 2000);
+
+      // Сохраняем интервалы для очистки
+      window.loaderIntervals = { progressInterval, statusInterval };
+    }
+
     async function loadMenu() {
-      document.getElementById('loader').style.display = 'flex';
+      const loaderEl = document.getElementById('loader');
+      loaderEl.style.display = 'flex';
+      
+      // Запуск анимации загрузки
+      startLoaderAnimation();
+      
       try {
         debugLog('Загрузка из основного API', SHEET_API_URL);
         const res = await fetch(SHEET_API_URL);
@@ -1366,10 +1644,16 @@
           document.getElementById('menu').innerHTML = '<div style="text-align:center;color:var(--text-light);margin:40px;">Ошибка загрузки меню</div>';
         }
       }
-      document.getElementById('loader').style.display = 'none';
+      loaderEl.style.display = 'none';
+      
+      // Очистка интервалов анимации
+      if (window.loaderIntervals) {
+        clearInterval(window.loaderIntervals.progressInterval);
+        clearInterval(window.loaderIntervals.statusInterval);
+      }
+      
       renderMenu();
     }
-
     function renderMenu() {
       const menu = document.getElementById('menu');
       let items = currentFilter === 'favorites' ? menuData.filter(i => favorites.includes(i.id)) : menuData.slice();
@@ -1551,10 +1835,6 @@
       `;
     }
 
-    document.getElementById('cartFab').addEventListener('click', function(e) {
-      // Обработка клика теперь в dragEnd функции
-    });
-
     function showCartModal() {
       const items = Object.values(cart).sort((a,b) => a.id - b.id);
       const total = items.reduce((s,i)=>s + (i.price||0) * (i.qty||0), 0);
@@ -1669,8 +1949,6 @@
         }
         return;
       }
-
-      let selectedGarnishId = null;
 
       document.getElementById('garnishModal').innerHTML = `
         <div class="modal garnish-modal-content">
@@ -2075,3 +2353,4 @@
   </script>
 </body>
 </html>
+```
