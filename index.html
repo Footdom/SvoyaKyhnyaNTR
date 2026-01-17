@@ -354,7 +354,7 @@
       width:68px;
       height:68px;
       border-radius:50%;
-      cursor:move;
+      cursor:grab;
       z-index:100;
       display:flex;
       align-items:center;
@@ -365,6 +365,10 @@
       user-select:none;
     }
     
+    .cart-fab:active {
+      cursor:grabbing;
+    }
+    
     .cart-fab:hover {
       box-shadow:0 12px 48px rgba(0,0,0,0.3);
     }
@@ -372,9 +376,10 @@
     .cart-fab.dragging {
       cursor:grabbing;
       box-shadow:0 16px 64px rgba(0,0,0,0.4);
+      transition:none;
     }
     
-    .cart-fab:hover .cart-preview {
+    .cart-fab:not(.dragging):hover .cart-preview {
       display:block;
     }
     
@@ -787,19 +792,40 @@
       left:12px;
       right:12px;
       top:12px;
-      background:linear-gradient(135deg, rgba(255,107,53,0.95) 0%, rgba(255,87,34,0.95) 100%);
-      backdrop-filter:blur(10px);
-      -webkit-backdrop-filter:blur(10px);
+      background:linear-gradient(135deg, 
+        rgba(255,87,34,0.25) 0%, 
+        rgba(255,107,53,0.35) 50%,
+        rgba(255,87,34,0.25) 100%);
+      backdrop-filter:blur(20px) saturate(180%);
+      -webkit-backdrop-filter:blur(20px) saturate(180%);
       color:white;
-      font-size:12px;
-      border-radius:8px;
-      padding:8px 12px;
+      font-size:13px;
+      border-radius:12px;
+      padding:10px 16px;
       text-align:center;
       z-index:6;
-      font-weight:600;
-      letter-spacing:0.5px;
-      box-shadow:0 4px 16px rgba(255,107,53,0.4);
-      border:1px solid rgba(255,255,255,0.2);
+      font-weight:700;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      box-shadow:0 8px 32px rgba(255,87,34,0.3),
+                 inset 0 1px 0 rgba(255,255,255,0.3),
+                 inset 0 -1px 0 rgba(0,0,0,0.1);
+      border:1px solid rgba(255,255,255,0.18);
+      text-shadow:0 2px 4px rgba(0,0,0,0.3);
+      animation:glassShine 3s ease-in-out infinite;
+    }
+
+    @keyframes glassShine {
+      0%, 100% {
+        box-shadow:0 8px 32px rgba(255,87,34,0.3),
+                   inset 0 1px 0 rgba(255,255,255,0.3),
+                   inset 0 -1px 0 rgba(0,0,0,0.1);
+      }
+      50% {
+        box-shadow:0 8px 32px rgba(255,87,34,0.5),
+                   inset 0 1px 0 rgba(255,255,255,0.5),
+                   inset 0 -1px 0 rgba(0,0,0,0.1);
+      }
     }
 
     .spinner {
@@ -1526,9 +1552,7 @@
     }
 
     document.getElementById('cartFab').addEventListener('click', function(e) {
-      if (!this.classList.contains('dragging')) {
-        showCartModal();
-      }
+      // Обработка клика теперь в dragEnd функции
     });
 
     function showCartModal() {
@@ -1976,77 +2000,71 @@
     (function initDraggableCart() {
       const fab = document.getElementById('cartFab');
       let isDragging = false;
+      let hasMoved = false;
       let currentX, currentY, initialX, initialY;
-      let xOffset = 0, yOffset = 0;
 
       fab.addEventListener('mousedown', dragStart);
-      fab.addEventListener('touchstart', dragStart);
-      document.addEventListener('mousemove', drag);
-      document.addEventListener('touchmove', drag);
-      document.addEventListener('mouseup', dragEnd);
-      document.addEventListener('touchend', dragEnd);
+      fab.addEventListener('touchstart', dragStart, { passive: false });
 
       function dragStart(e) {
-        if (e.type === 'touchstart') {
-          initialX = e.touches[0].clientX - xOffset;
-          initialY = e.touches[0].clientY - yOffset;
-        } else {
-          initialX = e.clientX - xOffset;
-          initialY = e.clientY - yOffset;
-        }
+        const touch = e.type === 'touchstart' ? e.touches[0] : e;
+        initialX = touch.clientX;
+        initialY = touch.clientY;
+        
+        const rect = fab.getBoundingClientRect();
+        currentX = rect.left;
+        currentY = rect.top;
+        
+        hasMoved = false;
+        isDragging = true;
+        fab.classList.add('dragging');
 
-        if (e.target === fab || fab.contains(e.target)) {
-          isDragging = true;
-          fab.classList.add('dragging');
-        }
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchend', dragEnd);
       }
 
       function drag(e) {
-        if (isDragging) {
-          e.preventDefault();
+        if (!isDragging) return;
+        
+        e.preventDefault();
+        hasMoved = true;
 
-          if (e.type === 'touchmove') {
-            currentX = e.touches[0].clientX - initialX;
-            currentY = e.touches[0].clientY - initialY;
-          } else {
-            currentX = e.clientX - initialX;
-            currentY = e.clientY - initialY;
-          }
+        const touch = e.type === 'touchmove' ? e.touches[0] : e;
+        const deltaX = touch.clientX - initialX;
+        const deltaY = touch.clientY - initialY;
 
-          xOffset = currentX;
-          yOffset = currentY;
+        let newX = currentX + deltaX;
+        let newY = currentY + deltaY;
 
-          const rect = fab.getBoundingClientRect();
-          const maxX = window.innerWidth - rect.width;
-          const maxY = window.innerHeight - rect.height;
+        const maxX = window.innerWidth - fab.offsetWidth;
+        const maxY = window.innerHeight - fab.offsetHeight;
 
-          xOffset = Math.max(0, Math.min(xOffset, maxX));
-          yOffset = Math.max(0, Math.min(yOffset, maxY));
+        newX = Math.max(0, Math.min(newX, maxX));
+        newY = Math.max(0, Math.min(newY, maxY));
 
-          fab.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
-        }
+        fab.style.left = newX + 'px';
+        fab.style.top = newY + 'px';
+        fab.style.right = 'auto';
+        fab.style.bottom = 'auto';
       }
 
-      function dragEnd() {
-        if (isDragging) {
-          isDragging = false;
-          fab.classList.remove('dragging');
-          
-          setTimeout(() => {
-            if (!isDragging) {
-              const clickEvent = new Event('cartFabClick');
-              fab.dispatchEvent(clickEvent);
-            }
-          }, 10);
-        }
-      }
+      function dragEnd(e) {
+        if (!isDragging) return;
 
-      fab.addEventListener('cartFabClick', function() {
-        const moved = Math.abs(xOffset - currentX) > 5 || Math.abs(yOffset - currentY) > 5;
-        if (!moved) {
+        isDragging = false;
+        fab.classList.remove('dragging');
+
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('touchmove', drag);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchend', dragEnd);
+
+        if (!hasMoved) {
           showCartModal();
         }
-      });
+      }
     })();
 
     updateCartFab();
